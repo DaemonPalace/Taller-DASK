@@ -1,0 +1,8 @@
+dask[distributed]==2024.8.0
+prefect==2.20.4
+pydantic==2.9.2
+anyio==4.4.0
+pandas==2.2.2
+numpy==1.26.4
+pyarrow==17.0.0
+bokeh==3.4.3

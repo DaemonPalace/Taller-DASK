@@ -1,0 +1,6 @@
+.venv
+shared-data
+context
+__pycache__
+*.pyc
+.git

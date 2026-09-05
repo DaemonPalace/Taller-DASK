@@ -1,0 +1,107 @@
+services:
+  dask-scheduler:
+    build: .
+    container_name: dask-scheduler
+    hostname: dask-scheduler
+    command: ["dask", "scheduler", "--host", "0.0.0.0", "--port", "8786", "--dashboard-address", ":8787"]
+    ports:
+      - "8786:8786"
+      - "8787:8787"
+    networks:
+      - dask-cluster-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+    volumes:
+      - ./shared-data:/app/shared-data:z
+
+  dask-worker-1:
+    build: .
+    container_name: dask-worker-1
+    hostname: dask-worker-1
+    command: ["dask", "worker", "tcp://dask-scheduler:8786", "--nthreads", "2", "--memory-limit", "1.5GB", "--name", "worker-1"]
+    depends_on:
+      - dask-scheduler
+    networks:
+      - dask-cluster-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1.5G
+    volumes:
+      - ./shared-data:/app/shared-data:z
+
+  dask-worker-2:
+    build: .
+    container_name: dask-worker-2
+    hostname: dask-worker-2
+    command: ["dask", "worker", "tcp://dask-scheduler:8786", "--nthreads", "2", "--memory-limit", "1.5GB", "--name", "worker-2"]
+    depends_on:
+      - dask-scheduler
+    networks:
+      - dask-cluster-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1.5G
+    volumes:
+      - ./shared-data:/app/shared-data:z
+
+  dask-worker-3:
+    build: .
+    container_name: dask-worker-3
+    hostname: dask-worker-3
+    command: ["dask", "worker", "tcp://dask-scheduler:8786", "--nthreads", "2", "--memory-limit", "1.5GB", "--name", "worker-3"]
+    depends_on:
+      - dask-scheduler
+    networks:
+      - dask-cluster-net
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1.5G
+    volumes:
+      - ./shared-data:/app/shared-data:z
+
+  prefect-server:
+    build: .
+    container_name: prefect-server
+    hostname: prefect-server
+    command: ["prefect", "server", "start", "--host", "0.0.0.0", "--port", "4200"]
+    ports:
+      - "4200:4200"
+    networks:
+      - dask-cluster-net
+    volumes:
+      - prefect-data:/root/.prefect
+
+  prefect-runner:
+    build: .
+    container_name: prefect-runner
+    hostname: prefect-runner
+    command: ["python", "flows/clean_pipeline.py"]
+    depends_on:
+      - dask-scheduler
+      - dask-worker-1
+      - dask-worker-2
+      - dask-worker-3
+      - prefect-server
+    environment:
+      - DASK_SCHEDULER_ADDRESS=tcp://dask-scheduler:8786
+      - PREFECT_API_URL=http://prefect-server:4200/api
+    networks:
+      - dask-cluster-net
+    volumes:
+      - ./shared-data:/app/shared-data:z
+
+networks:
+  dask-cluster-net:
+    driver: bridge
+
+volumes:
+  prefect-data:
